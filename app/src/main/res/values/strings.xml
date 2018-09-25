@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">AmazonTest</string>
+    <string name="contacts_list_title">Contacts</string>
+    <string name="profile_picture">profile picture</string>
+    <string name="facebook">Facebook</string>
+    <string name="jennifer">Jennifer</string>
+    <string name="favorite">Favorite</string>
+    <string name="contact_key">CONTACT</string>
+    <string name="star">\u2B50</string>
+</resources>
