@@ -1,4 +1,4 @@
-package com.blub.amazontest.Contacts.view;
+package com.blub.amazontest.contacts.view;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
@@ -10,8 +10,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.blub.amazontest.R;
-import com.blub.amazontest.Contacts.model.ContactDto;
-import com.blub.amazontest.Contacts.model.ViewItem;
+import com.blub.amazontest.contacts.model.ContactDto;
+import com.blub.amazontest.contacts.model.ViewItem;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 

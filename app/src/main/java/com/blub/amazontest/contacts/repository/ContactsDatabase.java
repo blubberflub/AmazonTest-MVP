@@ -1,11 +1,11 @@
-package com.blub.amazontest.Contacts.dao;
+package com.blub.amazontest.contacts.repository;
 
 import android.arch.persistence.room.Database;
 import android.arch.persistence.room.Room;
 import android.arch.persistence.room.RoomDatabase;
 import android.content.Context;
 
-import com.blub.amazontest.Contacts.model.ContactDto;
+import com.blub.amazontest.contacts.model.ContactDto;
 
 @Database(entities = ContactDto.class, version = 1, exportSchema = false)
 public abstract class ContactsDatabase extends RoomDatabase {

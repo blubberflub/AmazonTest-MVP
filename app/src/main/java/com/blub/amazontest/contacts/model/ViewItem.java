@@ -1,4 +1,4 @@
-package com.blub.amazontest.Contacts.model;
+package com.blub.amazontest.contacts.model;
 
 public class ViewItem {
 

@@ -1,5 +1,5 @@
 
-package com.blub.amazontest.Contacts.model;
+package com.blub.amazontest.contacts.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;

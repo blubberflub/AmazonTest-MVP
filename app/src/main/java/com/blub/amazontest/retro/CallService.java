@@ -1,6 +1,6 @@
 package com.blub.amazontest.retro;
 
-import com.blub.amazontest.Contacts.model.ContactDto;
+import com.blub.amazontest.contacts.model.ContactDto;
 
 import java.util.List;
 

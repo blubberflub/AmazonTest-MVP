@@ -1,4 +1,4 @@
-package com.blub.amazontest.Contacts.view;
+package com.blub.amazontest.contacts.view;
 
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -12,8 +12,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.blub.amazontest.Contacts.BaseFragment;
-import com.blub.amazontest.Contacts.model.ContactDto;
+import com.blub.amazontest.contacts.BaseFragment;
+import com.blub.amazontest.contacts.model.ContactDto;
 import com.blub.amazontest.MainActivity;
 import com.blub.amazontest.R;
 import com.bumptech.glide.Glide;
@@ -42,19 +42,11 @@ public class ContactDetailsFragment extends BaseFragment {
     @BindView(R.id.details_email)
     TextView mEmail;
 
+    public static final String BUNDLE_KEY = "contact_info";
+
     private ContactDto mContact;
 
     private DetailsFragmentCallback mActivityCallback;
-
-    public static ContactDetailsFragment newInstance(Parcelable in) {
-
-        Bundle args = new Bundle();
-        args.putParcelable(MainActivity.BUNDLE_KEY, in);
-
-        ContactDetailsFragment fragment = new ContactDetailsFragment();
-        fragment.setArguments(args);
-        return fragment;
-    }
 
     @Nullable
     @Override
@@ -62,41 +54,6 @@ public class ContactDetailsFragment extends BaseFragment {
         setHasOptionsMenu(true);
         View view = inflater.inflate(R.layout.details_fragment, container, false);
         ButterKnife.bind(this, view);
-
-        if (getArguments() != null) {
-            mContact = getArguments().getParcelable(MainActivity.BUNDLE_KEY);
-        }
-
-        RequestOptions placeHolder = new RequestOptions()
-                .placeholder(R.drawable.ic_person);
-
-        Glide.with(requireContext())
-                .setDefaultRequestOptions(placeHolder)
-                .load(mContact.getLargeImageURL())
-                .into(mProfilePic);
-
-        mName.setText(mContact.getName());
-        mJob.setText(mContact.getCompanyName());
-        mHomePhone.setText(mContact.getPhone().getHome());
-        mMobilePhone.setText(mContact.getPhone().getMobile());
-        mWorkPhone.setText(mContact.getPhone().getWork());
-
-        //address
-        String fullAddress = new StringBuilder()
-                .append(mContact.getAddress().getStreet())
-                .append(System.getProperty("line.separator"))
-                .append(mContact.getAddress().getCity())
-                .append(", ")
-                .append(mContact.getAddress().getState())
-                .append(" ")
-                .append(mContact.getAddress().getZipCode())
-                .append(", ")
-                .append(mContact.getAddress().getCountry())
-                .toString();
-
-        mAddress.setText(fullAddress);
-        mBirthday.setText(mContact.getBirthdate());
-        mEmail.setText(mContact.getEmailAddress());
 
         return view;
     }
@@ -107,7 +64,46 @@ public class ContactDetailsFragment extends BaseFragment {
 
         if (getActivity() instanceof DetailsFragmentCallback) {
             mActivityCallback = (DetailsFragmentCallback) getActivity();
-            setTitle(null);
+        }
+    }
+
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+
+        if (!hidden) {
+            mContact = getArguments().getParcelable(BUNDLE_KEY);
+
+            RequestOptions placeHolder = new RequestOptions()
+                    .placeholder(R.drawable.ic_person);
+
+            Glide.with(requireContext())
+                    .setDefaultRequestOptions(placeHolder)
+                    .load(mContact.getLargeImageURL())
+                    .into(mProfilePic);
+
+            mName.setText(mContact.getName());
+            mJob.setText(mContact.getCompanyName());
+            mHomePhone.setText(mContact.getPhone().getHome());
+            mMobilePhone.setText(mContact.getPhone().getMobile());
+            mWorkPhone.setText(mContact.getPhone().getWork());
+
+            //address
+            String fullAddress = new StringBuilder()
+                    .append(mContact.getAddress().getStreet())
+                    .append(System.getProperty("line.separator"))
+                    .append(mContact.getAddress().getCity())
+                    .append(", ")
+                    .append(mContact.getAddress().getState())
+                    .append(" ")
+                    .append(mContact.getAddress().getZipCode())
+                    .append(", ")
+                    .append(mContact.getAddress().getCountry())
+                    .toString();
+
+            mAddress.setText(fullAddress);
+            mBirthday.setText(mContact.getBirthdate());
+            mEmail.setText(mContact.getEmailAddress());
         }
     }
 
@@ -115,9 +111,11 @@ public class ContactDetailsFragment extends BaseFragment {
     public void onPrepareOptionsMenu(Menu menu) {
         super.onPrepareOptionsMenu(menu);
 
-        menu.findItem(R.id.favorite_btn)
-                .setVisible(true)
-                .setIcon(mContact.isFavorite() ? R.drawable.ic_star : R.drawable.ic_star_border);
+        if (getArguments() != null) {
+            menu.findItem(R.id.favorite_btn)
+                    .setVisible(true)
+                    .setIcon(mContact.isFavorite() ? R.drawable.ic_star : R.drawable.ic_star_border);
+        }
     }
 
     @Override

@@ -1,10 +1,11 @@
-package com.blub.amazontest.Contacts.dao;
+package com.blub.amazontest.contacts.repository;
 
+import android.arch.lifecycle.LiveData;
 import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Insert;
 import android.arch.persistence.room.Query;
 
-import com.blub.amazontest.Contacts.model.ContactDto;
+import com.blub.amazontest.contacts.model.ContactDto;
 
 import java.util.List;
 
@@ -18,7 +19,7 @@ public interface ContactsDao {
     void insertListOfContacts(List<ContactDto> contactsList);
 
     @Query("SELECT * FROM contacts")
-    List<ContactDto> getAllContacts();
+    LiveData<List<ContactDto>> getAllContacts();
 
     @Query("SELECT COUNT(*) FROM contacts")
     int getContactsCount();

@@ -1,26 +1,31 @@
 package com.blub.amazontest;
 
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.View;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.blub.amazontest.Contacts.ContactsContract;
-import com.blub.amazontest.Contacts.ContactsPresenter;
-import com.blub.amazontest.Contacts.dao.ContactsDatabase;
-import com.blub.amazontest.Contacts.dao.ContactsRepositoryImpl;
-import com.blub.amazontest.Contacts.model.ContactDto;
-import com.blub.amazontest.Contacts.view.ContactDetailsFragment;
-import com.blub.amazontest.Contacts.view.ContactListFragment;
+import com.blub.amazontest.contacts.ContactsViewModel;
+import com.blub.amazontest.contacts.ViewModelFactory;
+import com.blub.amazontest.contacts.model.ContactDto;
+import com.blub.amazontest.contacts.repository.ContactsDao;
+import com.blub.amazontest.contacts.repository.ContactsDatabase;
+import com.blub.amazontest.contacts.repository.ContactsRepository;
+import com.blub.amazontest.contacts.view.ContactDetailsFragment;
+import com.blub.amazontest.contacts.view.ContactListFragment;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 
 import java.util.List;
 
@@ -29,11 +34,10 @@ import butterknife.ButterKnife;
 
 /**
  * Main controller for fragments and toolbar
- *
- * UI for {@link ContactsPresenter}
+ * <p>
+ * UI for ViewModel
  */
-public class MainActivity extends AppCompatActivity implements ContactsContract.View,
-        ContactListFragment.ListFragmentCallBack,
+public class MainActivity extends AppCompatActivity implements ContactListFragment.ListFragmentCallBack,
         ContactDetailsFragment.DetailsFragmentCallback {
 
     @BindView(R.id.actionbar)
@@ -44,18 +48,13 @@ public class MainActivity extends AppCompatActivity implements ContactsContract.
     TextView mPageTitle;
 
     private FragmentManager mFragmentManager;
-    private ContactsContract.UserActionsListener mPresenter;
 
     //fragments
     private ContactListFragment mContactListFragment;
     private ContactDetailsFragment mContactDetailsFragment;
 
-    //fragment codes
-    public static final String BUNDLE_KEY = "ARGS";
-
-    public static final int DETAILS_FRAGMENT = 0;
-    public static final int LIST_FRAGMENT = 1;
-
+    private LiveData<SparseArray<List<ContactDto>>> mContactMapObservable;
+    private ContactsViewModel mViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,14 +68,48 @@ public class MainActivity extends AppCompatActivity implements ContactsContract.
 
         mBackButton.setOnClickListener(v -> onBackPressed());
 
-        mPresenter = new ContactsPresenter(this,
-                new ContactsRepositoryImpl(ContactsDatabase
-                        .getContactsDatabase(this)
-                        .contactsRoomDao()));
+        ContactsDao dao = ContactsDatabase.getContactsDatabase(this).contactsRoomDao();
+
+        mViewModel = ViewModelProviders.of(this, new ViewModelFactory(getApplication(),
+                new ContactsRepository(dao))).get(ContactsViewModel.class);
+        mContactMapObservable = mViewModel.getContactSparseArrayObservable();
 
         mFragmentManager = getSupportFragmentManager();
+        initializeFragments();
 
-        setFragment(LIST_FRAGMENT, null, false);
+        preloadImages();
+        setFragment(mContactListFragment, false);
+    }
+
+    private void preloadImages() {
+        RequestOptions placeHolder = new RequestOptions()
+                .placeholder(R.drawable.ic_person);
+
+        mViewModel.getContactsListObservable().observe(this, contactDtos -> {
+            for (ContactDto contact : contactDtos) {
+                Glide.with(getApplicationContext())
+                        .setDefaultRequestOptions(placeHolder)
+                        .load(contact.getLargeImageURL())
+                        .preload();
+            }
+        });
+    }
+
+    private void initializeFragments() {
+        mContactListFragment = new ContactListFragment();
+        mContactDetailsFragment = new ContactDetailsFragment();
+
+        FragmentTransaction transaction = mFragmentManager.beginTransaction();
+        transaction.add(R.id.frag_container,
+                mContactListFragment,
+                "Contacts");
+        transaction.add(R.id.frag_container,
+                mContactDetailsFragment);
+
+        transaction.hide(mContactListFragment);
+        transaction.hide(mContactDetailsFragment);
+
+        transaction.commit();
     }
 
     //allows fragments to set page title
@@ -96,38 +129,15 @@ public class MainActivity extends AppCompatActivity implements ContactsContract.
 
     /**
      * Set current visible fragment
-     *
-     * @param fragmentCode int references for fragments found in this {@link MainActivity}
-     * @param extras parcelable extras for fragment communication
-     * @param addToBackStack adds fragment to backstack if set to true
      */
-    public void setFragment(int fragmentCode,@Nullable Parcelable extras, boolean addToBackStack) {
-        Fragment fragment = null;
-
-        switch (fragmentCode) {
-            case LIST_FRAGMENT:
-                fragment = mFragmentManager.findFragmentByTag(ContactListFragment.class.getSimpleName());
-
-                if (fragment == null) {
-                    fragment = ContactListFragment.newInstance(extras);
-                }
-                break;
-            case DETAILS_FRAGMENT:
-                fragment = mFragmentManager.findFragmentByTag(ContactDetailsFragment.class.getSimpleName());
-
-                if (fragment == null) {
-                    fragment = ContactDetailsFragment.newInstance(extras);
-                }
-                break;
-        }
-
+    public void setFragment(Fragment fragment, boolean addToBackstack) {
         FragmentTransaction transaction = mFragmentManager.beginTransaction();
-        transaction.replace(R.id.frag_container, fragment, fragment.getClass().getSimpleName());
+        transaction.show(fragment);
 
-        if (addToBackStack) {
-            transaction.addToBackStack(fragment.getClass().getSimpleName());
+        if (addToBackstack) {
+            transaction.addToBackStack(fragment.getTag());
+            transaction.hide(mContactListFragment);
         }
-
         transaction.commit();
     }
 
@@ -138,6 +148,11 @@ public class MainActivity extends AppCompatActivity implements ContactsContract.
 
         if (fragment instanceof ContactListFragment) {
             mContactListFragment = (ContactListFragment) fragment;
+            mContactMapObservable.observe(mContactListFragment, listSparseArray -> {
+                if (listSparseArray.get(ContactsViewModel.OTHER_CONTACTS_LIST).size() != 0) {
+                    mContactListFragment.refreshList(listSparseArray);
+                }
+            });
         } else if (fragment instanceof ContactDetailsFragment) {
             mContactDetailsFragment = (ContactDetailsFragment) fragment;
         }
@@ -151,40 +166,21 @@ public class MainActivity extends AppCompatActivity implements ContactsContract.
         return true;
     }
 
-    //ContactsContract.View methods
-
-    @Override
-    public void toggleProgressBar(boolean visible) {
-        mContactListFragment.toggleProgressBar(visible ? ProgressBar.VISIBLE : ProgressBar.GONE);
-    }
-
-    @Override
-    public void showContactsList(List<ContactDto> favoritesList, List<ContactDto> contactsList) {
-        mContactListFragment.showContactsList(favoritesList, contactsList);
-    }
-
-    @Override
-    public void showContactDetails(ContactDto contactDto) {
-        setFragment(DETAILS_FRAGMENT, contactDto, true);
-    }
 
     //CALLBACK METHODS
     //These allow the fragments to notify user events to this MainActivity
-
-    //LIST FRAGMENT CALLBACK
-    @Override
-    public void openedListView() {
-        mPresenter.openedContactsList();
-    }
-
     @Override
     public void clickedContact(ContactDto contact) {
-        mPresenter.selectedContact(contact);
+        Bundle args = new Bundle();
+        args.putParcelable(ContactDetailsFragment.BUNDLE_KEY, contact);
+        mContactDetailsFragment.setArguments(args);
+
+        setFragment(mContactDetailsFragment, true);
     }
 
     //DETAILS FRAGMENT CALLBACK
     @Override
     public void toggleFavorite(ContactDto contact) {
-        mPresenter.toggleFavorite(contact);
+        mViewModel.toggledFavorite(contact);
     }
 }

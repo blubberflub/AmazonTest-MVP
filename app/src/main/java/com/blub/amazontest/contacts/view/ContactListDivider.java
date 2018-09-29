@@ -1,4 +1,4 @@
-package com.blub.amazontest.Contacts.view;
+package com.blub.amazontest.contacts.view;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -7,7 +7,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
-import com.blub.amazontest.Contacts.model.ContactDto;
+import com.blub.amazontest.contacts.model.ContactDto;
 import com.blub.amazontest.R;
 
 public class ContactListDivider extends android.support.v7.widget.DividerItemDecoration {

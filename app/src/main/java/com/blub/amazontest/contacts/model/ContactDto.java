@@ -1,5 +1,5 @@
 
-package com.blub.amazontest.Contacts.model;
+package com.blub.amazontest.contacts.model;
 
 import android.arch.persistence.room.Embedded;
 import android.arch.persistence.room.Entity;

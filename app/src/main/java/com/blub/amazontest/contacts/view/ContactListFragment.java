@@ -1,4 +1,4 @@
-package com.blub.amazontest.Contacts.view;
+package com.blub.amazontest.contacts.view;
 
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -7,15 +7,18 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
+import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 
-import com.blub.amazontest.Contacts.BaseFragment;
-import com.blub.amazontest.Contacts.model.ContactDto;
-import com.blub.amazontest.Contacts.model.Header;
-import com.blub.amazontest.Contacts.model.ViewItem;
+import com.blub.amazontest.contacts.BaseFragment;
+import com.blub.amazontest.contacts.ContactsViewModel;
+import com.blub.amazontest.contacts.model.ContactDto;
+import com.blub.amazontest.contacts.model.Header;
+import com.blub.amazontest.contacts.model.ViewItem;
 import com.blub.amazontest.MainActivity;
 import com.blub.amazontest.R;
 
@@ -36,16 +39,6 @@ public class ContactListFragment extends BaseFragment implements
     private RecyclerView.Adapter mAdapter;
     private ArrayList<ViewItem> mContactViewItems;
     private ListFragmentCallBack mActivityCallback;
-
-    public static ContactListFragment newInstance(Parcelable in) {
-
-        Bundle args = new Bundle();
-        args.putParcelable(MainActivity.BUNDLE_KEY, in);
-
-        ContactListFragment fragment = new ContactListFragment();
-        fragment.setArguments(args);
-        return fragment;
-    }
 
     @Nullable
     @Override
@@ -70,29 +63,18 @@ public class ContactListFragment extends BaseFragment implements
 
         if (getActivity() instanceof ListFragmentCallBack) {
             mActivityCallback = (ListFragmentCallBack) getActivity();
-            setTitle("Contacts");
         }
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
+    public void refreshList(SparseArray<List<ContactDto>> contactsSparseArray) {
+        mProgressBar.setVisibility(View.GONE);
+        mContactViewItems.clear();
 
-        if (mAdapter.getItemCount() == 0) {
-            mActivityCallback.openedListView();
-        }
-    }
-
-    public void toggleProgressBar(int visible) {
-        mProgressBar.setVisibility(visible);
-    }
-
-    public void showContactsList(List<ContactDto> favoritesList, List<ContactDto> contactsList) {
-        //add favorites header
         mContactViewItems.add(new Header(ViewItem.FAVORITE_CONTACTS_HEADER));
-        mContactViewItems.addAll(favoritesList);
+        mContactViewItems.addAll(contactsSparseArray.get(ContactsViewModel.FAVORITES_LIST));
         mContactViewItems.add(new Header(ViewItem.OTHER_CONTACTS_HEADER));
-        mContactViewItems.addAll(contactsList);
+        mContactViewItems.addAll(contactsSparseArray.get(ContactsViewModel.OTHER_CONTACTS_LIST));
+
         mAdapter.notifyDataSetChanged();
     }
 
@@ -102,11 +84,14 @@ public class ContactListFragment extends BaseFragment implements
         mActivityCallback.clickedContact(contactItem);
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mRecyclerView.setAdapter(null);
+    }
+
     public interface ListFragmentCallBack {
 
-        void openedListView();
-
         void clickedContact(ContactDto position);
-
     }
 }
